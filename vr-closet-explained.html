@@ -1,0 +1,1837 @@
+<!--
+  ============================================================================================
+  MY VR CLOSET, EXPLAINED LINE BY LINE
+  ============================================================================================
+
+  Hi Dev! This is your closet, the way Astra changed it to live in her Unity Stable, as a page you
+  can open by itself. Double-click this file and it opens in your browser.
+
+  HOW TO READ THIS FILE
+  - Every line of code has a note right above it saying what it does, and an empty line under it.
+  - Notes are called COMMENTS. The computer skips them completely; they are only for people.
+  - This file uses three languages, and each one writes its comments a little differently:
+      1. HTML says WHAT is on the page (a title, buttons, a search box).
+         Its comments look like this one: they start with  <!- -  and end with  - ->  (no spaces).
+      2. CSS says how things LOOK (colors, sizes, round corners).
+         Its comments sit between  /*  and  */
+      3. JavaScript says what things DO (what happens when you click, how the closet is saved).
+         Its comments start with  //  and run to the end of the line.
+
+  HOW TO PLAY WITH IT
+  - Open this file in a text editor (Notepad works; VS Code is nicer), change one thing, save,
+    then refresh the page in your browser (F5) to see what changed.
+  - A good first try: find  --pink: #ff3cc7  near the top of the CSS and change it to  #39ff9c
+  - Broke something? That is how everyone learns. Undo (Ctrl+Z), save, refresh.
+
+  WHAT CHANGED FROM YOUR FIRST CLOSET (vr-closet.html)
+  - The look: graphite gray with neon pink and blue, to match Astra's Unity Stable.
+  - The rails: the ones from your desktop app (Avatars, Bases, Tops, ... Decals).
+  - An item can be saved without a photo: it gets a name card with its initials.
+  - Export backup and Import backup buttons, so your closet can be kept safe or moved.
+  - Your theme picker and the galaxy, paw and nebula backgrounds stayed in your version; the stars came along.
+
+  It saves in the same place as vr-closet.html, so what you saved there shows up here too.
+  ============================================================================================
+-->
+<!-- This first line tells the browser the page is written in modern HTML. -->
+<!DOCTYPE html>
+
+<!-- The start of the page. lang="en" says the words on it are in English. -->
+<html lang="en">
+
+<!-- The HEAD holds things about the page that are not shown on it, like its title and its styles. -->
+<head>
+
+<!-- Use UTF-8 letters, so emoji and other alphabets (like 星) show up correctly. -->
+<meta charset="utf-8">
+
+<!-- On a phone, make the page as wide as the screen instead of shrinking a desktop page down. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- The words on the browser tab. -->
+<title>My VR Closet (explained)</title>
+
+<!-- The STYLE tag holds the CSS: everything below it, until </style>, is about how things look. -->
+<style>
+
+/* :root is the whole page. These "--names" are VARIABLES: colors stored under a name so they can be reused. */
+:root { --case: #26272b; --card: #1b1c20; --line: #3a3c44; --pink: #ff3cc7; --cyan: #2ef2ff; --ink: #eef0f4; --muted: #b7bfcc; }
+
+/* The * means "everything". border-box makes widths include the border and padding, which is easier to think about. */
+* { box-sizing: border-box; }
+
+/* The page itself: no gap at the edge of the window, a dark background, light text and a clean font. */
+body { margin: 0; padding: 16px; background: #1f2025; color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+
+/* Buttons and boxes you type in normally use their own font; this makes them use the page's font. */
+input, select, textarea, button { font: inherit; }
+
+/* Links are light blue so they stand out on the dark background. */
+a { color: #9fd0ff; }
+
+/* Anything marked "hidden" really disappears (!important means this rule wins over the others). */
+[hidden] { display: none !important; }
+
+/* The closet case: a graphite box with round corners and a soft pink and blue glow around it. */
+.case { position: relative; overflow: hidden; max-width: 1100px; margin: 0 auto; background: linear-gradient(160deg, #2c2d33, var(--case) 55%, #202126); border: 1px solid var(--line); border-radius: 22px; padding: 16px 16px 20px; box-shadow: 0 0 18px #ff3cc722, 0 0 30px #2ef2ff14; }
+
+/* The layer of twinkling stars fills the case, sits behind everything, and lets clicks pass through it. */
+.sky { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+/* Each star is placed by hand (from the JavaScript) and runs the "twinkle" animation below. */
+.sky svg { position: absolute; opacity: .3; animation: twinkle var(--t, 4s) ease-in-out var(--dl, 0s) infinite; }
+
+/* Everything else in the case sits on top of the stars. */
+.inside { position: relative; z-index: 1; }
+
+/* The twinkle animation: at the start and end a star is faint and small; halfway through it is brighter and bigger. */
+@keyframes twinkle { 0%, 100% { opacity: .05; transform: scale(.6) rotate(var(--r, 0deg)); } 50% { opacity: .45; transform: scale(1.1) rotate(var(--r, 0deg)); } }
+
+/* The big "My VR closet" title, with a little pink glow. clamp() lets it grow with the window, between two sizes. */
+.title { margin: 2px 0; font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 0 12px #ff3cc755; }
+
+/* The small line under the title. */
+.by { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+
+/* A row of things side by side (flex), with gaps, that wraps onto a new line when there is no room. */
+.bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* The search box: it stretches to fill the space in its row. */
+.bar input[type=search] { flex: 1 1 200px; min-width: 0; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+
+/* Every button: dark gray, rounded, bold-ish text, and the hand pointer when you hover over it. */
+.btn { border: 1px solid var(--line); background: #2f3138; color: var(--ink); padding: 8px 13px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; }
+
+/* When the mouse is over a button, its border lights up blue. */
+.btn:hover { border-color: var(--cyan); }
+
+/* The main button (like "Add item") is neon pink with a glow. */
+.btn.main { background: var(--pink); border-color: var(--pink); color: #1b0b17; box-shadow: 0 0 12px #ff3cc766; }
+
+/* The Delete button has pinkish-red words, as a warning. */
+.btn.danger { color: #ff7a90; }
+
+/* A row of round "chip" buttons that slides sideways, with its scrollbar hidden. */
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 12px 0 4px; scrollbar-width: none; scroll-behavior: smooth; }
+
+/* Hides the scrollbar in Chrome and Edge too (they need their own rule). */
+.chips::-webkit-scrollbar { display: none; }
+
+/* One chip: a pill-shaped button with a thin border. */
+.chip { flex: none; border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 5px 13px; cursor: pointer; font-size: 13px; }
+
+/* The chip that is picked right now turns neon blue. aria-pressed="true" is how the page marks it as picked. */
+.chip[aria-pressed=true] { background: var(--cyan); color: #06222a; border-color: var(--cyan); box-shadow: 0 0 10px #2ef2ff55; font-weight: 700; }
+
+/* The three tabs (Closet, Favorites, Outfits) share the row equally. */
+.tabs .chip { flex: 1; text-align: center; font-weight: 700; }
+
+/* The picked tab is pink instead of blue. */
+.tabs .chip[aria-pressed=true] { background: var(--pink); border-color: var(--pink); color: #1b0b17; box-shadow: 0 0 10px #ff3cc766; }
+
+/* Space above each rail. */
+.sec { margin-top: 22px; }
+
+/* The rail names ("Avatars", "Tops"), with the item count beside them. */
+.sec h2 { margin: 0 0 2px; font-size: 16px; font-weight: 750; display: flex; gap: 8px; align-items: baseline; }
+
+/* The item count is smaller and paler. */
+.sec h2 small { font-weight: 400; font-size: 12px; color: var(--muted); }
+
+/* The box around a row and its arrows, so the arrows can sit on top of the row. */
+.slider { position: relative; }
+
+/* A rail: items in a row that slides sideways, with room at the top for the hangers. */
+.rail { position: relative; display: flex; gap: 14px; overflow-x: auto; padding: 30px 4px 12px; scrollbar-width: none; scroll-behavior: smooth; }
+
+/* Hide the rail's scrollbar in Chrome and Edge too. */
+.rail::-webkit-scrollbar { display: none; }
+
+/* The shiny metal bar the hangers hang on, drawn with ::before (an extra bit of drawing CSS adds in front of the box). */
+.railwrap::before { content: ""; position: absolute; left: 0; right: 0; top: 12px; height: 4px; border-radius: 3px; background: linear-gradient(90deg, #9ea4b3, #e8ebf2 50%, #9ea4b3); box-shadow: 0 0 8px #2ef2ff88; }
+
+/* The round ‹ and › arrows, placed halfway down the photos. */
+.arrow { position: absolute; top: 122px; transform: translateY(-50%); z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #2f3138; color: var(--ink); font-size: 22px; line-height: 1; padding: 0; cursor: pointer; box-shadow: 0 4px 14px #0008; display: grid; place-items: center; }
+
+/* An arrow lights up blue when the mouse is over it. */
+.arrow:hover { background: var(--cyan); border-color: var(--cyan); color: #06222a; }
+
+/* The left arrow sits on the left edge. */
+.arrow.prev { left: -6px; }
+
+/* The right arrow sits on the right edge. */
+.arrow.next { right: -6px; }
+
+/* The arrows beside the chip buttons are smaller and higher up. */
+.chipwrap .arrow { top: 29px; width: 30px; height: 30px; font-size: 18px; }
+
+/* One item on a rail: 140 pixels wide. */
+.item { flex: none; width: 140px; position: relative; }
+
+/* The coat hanger above the item, centered, drawn with light gray lines. */
+.hanger { position: absolute; left: 50%; top: -22px; margin-left: -14px; width: 28px; height: 24px; stroke: #d4d8e2; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The item's photo and name together are one big invisible button. */
+.open { display: block; width: 100%; border: 0; background: none; padding: 0; cursor: pointer; text-align: left; color: var(--ink); }
+
+/* The photo frame: 3 wide by 4 tall, round corners. */
+.pic { display: block; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; background: var(--card); border: 1px solid var(--line); }
+
+/* Hovering over an item (or reaching it with the Tab key) makes its frame glow pink. */
+.open:hover .pic, .open:focus-visible .pic { border-color: var(--pink); box-shadow: 0 0 12px #ff3cc766; }
+
+/* The photo fills its frame; "cover" crops it instead of squashing it. */
+.pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* The item's name under its photo. overflow-wrap lets a very long name break onto the next line. */
+.nm { display: block; margin-top: 6px; font-weight: 600; font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }
+
+/* The heart button in the photo's corner. */
+.heart { position: absolute; right: 6px; top: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: #000a; color: #fff; font-size: 18px; line-height: 32px; padding: 0; cursor: pointer; }
+
+/* A hearted item's heart turns pink. */
+.heart[aria-pressed=true] { background: var(--pink); color: #1b0b17; box-shadow: 0 0 10px #ff3cc799; }
+
+/* "Nothing on this rail yet" messages. */
+.empty { color: var(--muted); padding: 6px 4px 0; margin: 0; font-size: 13px; }
+
+/* Bigger centered messages, like "No favorites yet". */
+.none { text-align: center; color: var(--muted); padding: 40px 10px; }
+
+/* A row of small pictures (the outfit you are building). */
+.look { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 0; min-height: 20px; }
+
+/* A small picture you can tap to add a piece to an outfit. */
+.tile { border: 0; background: none; padding: 0; cursor: pointer; width: 90px; text-align: left; color: var(--ink); }
+
+/* The small picture itself, 3 wide by 4 tall. */
+.tile img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; background: var(--card); }
+
+/* A piece that is in the outfit gets a pink outline. */
+.tile[aria-pressed=true] img { outline: 2px solid var(--pink); outline-offset: 1px; box-shadow: 0 0 10px #ff3cc788; }
+
+/* The name under a small picture. */
+.tn { display: block; font-size: 12px; line-height: 1.2; margin-top: 3px; overflow-wrap: anywhere; }
+
+/* The "Pick pieces" grid: as many columns of small pictures as fit. */
+.pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
+
+/* In the grid, the small pictures fill their column. */
+.pick .tile { width: auto; }
+
+/* A saved outfit's box. */
+.outfit { background: #1f2025; border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-top: 12px; }
+
+/* A saved outfit's name. */
+.outfit h3 { margin: 0 0 6px; font-size: 14px; }
+
+/* The tiny pictures in a saved outfit. */
+.mini { width: 58px; }
+
+/* The tiny picture itself. */
+.mini img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 8px; display: block; }
+
+/* The box where you name an outfit. */
+input.oname { width: 100%; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 9px; padding: 9px; }
+
+/* The pop-up windows (adding an item, adding a rail). min() picks the smaller size, so it fits on a phone. */
+dialog { border: 1px solid var(--line); border-radius: 16px; padding: 0; width: min(440px, calc(100% - 24px)); background: var(--case); color: var(--ink); box-shadow: 0 0 30px #ff3cc733; }
+
+/* The dark see-through layer behind an open pop-up. */
+dialog::backdrop { background: #0b0c10b3; }
+
+/* The form inside a pop-up: one column with gaps. */
+dialog form { padding: 18px; display: grid; gap: 12px; }
+
+/* Each label sits above its box. */
+dialog label { display: grid; gap: 4px; font-weight: 600; font-size: 13px; }
+
+/* The boxes you type in, inside the pop-ups. */
+dialog input[type=text], dialog select, dialog textarea { width: 100%; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 9px; padding: 9px; }
+
+/* The dashed box where you drop or choose a photo. */
+.drop { border: 2px dashed var(--line); border-radius: 12px; min-height: 150px; display: grid; place-items: center; text-align: center; color: var(--muted); cursor: pointer; overflow: hidden; background: var(--card); padding: 8px; }
+
+/* While you drag a photo over it, its border turns pink. */
+.drop.over { border-color: var(--pink); }
+
+/* The photo preview inside the drop box. "contain" shows the whole photo. */
+.drop img { width: 100%; max-height: 280px; object-fit: contain; display: block; }
+
+/* The row of buttons at the bottom of a pop-up, pushed to the right. */
+.row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Small pale help text. */
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* When you move around with the Tab key, whatever is selected gets a blue outline. */
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* @media: only on screens 700 pixels wide or less (phones), use less padding and smaller items. */
+@media (max-width: 700px) { body { padding: 8px; } .case { padding: 12px 10px 16px; border-radius: 16px; } .item { width: 118px; } .arrow { top: 107px; } }
+
+/* If your computer is set to show less motion, the stars stop twinkling and rows stop gliding. */
+@media (prefers-reduced-motion: reduce) { .sky svg { animation: none; } .rail, .chips { scroll-behavior: auto; } }
+
+/* The end of the CSS. This note is still inside the style tag, so it is written the CSS way. */
+</style>
+
+<!-- The end of the head. -->
+</head>
+
+<!-- The BODY holds everything you see on the page. -->
+<body>
+
+<!-- The closet case. "class" names it for the CSS (it gets the .case look). -->
+<div class="case">
+
+<!-- The star layer. The JavaScript fills it with stars. aria-hidden="true" tells screen readers to skip it. -->
+<div class="sky" id="sky" aria-hidden="true"></div>
+
+<!-- A box for everything that sits on top of the stars. -->
+<div class="inside">
+
+<!-- The title. h1 means "the biggest heading on the page". -->
+<h1 class="title">My VR closet</h1>
+
+<!-- The small line under the title. -->
+<p class="by">Saved only in this browser. Export a backup to keep it safe.</p>
+
+<!-- The row with the search box and the buttons. -->
+<div class="bar">
+
+<!-- The search box. "id" gives it a unique name so the JavaScript can find it. -->
+<input type="search" id="q" placeholder="Search avatars and outfits" aria-label="Search the closet">
+
+<!-- The Add item button. type="button" means it is a plain button, not part of a form. -->
+<button class="btn main" type="button" id="add">Add item</button>
+
+<!-- The Add rail button. -->
+<button class="btn" type="button" id="addrail">Add rail</button>
+
+<!-- The Export backup button: saves your whole closet as a file. -->
+<button class="btn" type="button" id="export">Export backup</button>
+
+<!-- The Import backup button: loads a closet back from such a file. -->
+<button class="btn" type="button" id="import">Import backup</button>
+
+<!-- A hidden file picker. The Import button above clicks it for you. It only accepts .json files. -->
+<input type="file" id="importfile" accept="application/json,.json" hidden>
+
+<!-- The end of the row. -->
+</div>
+
+<!-- The three tabs (Closet, Favorites, Outfits). It starts empty: the JavaScript adds the buttons. -->
+<div class="chips tabs" id="tabs" role="group" aria-label="Closet sections"></div>
+
+<!-- The rail buttons (All, Avatars, Tops…). The JavaScript adds them too. -->
+<div class="chips" id="chips" role="group" aria-label="Rails"></div>
+
+<!-- Where the rails, or the outfit builder, are drawn. -->
+<div id="rails"></div>
+
+<!-- The end of the box on top of the stars. -->
+</div>
+
+<!-- The end of the closet case. -->
+</div>
+
+<!-- The pop-up window for adding or editing an item. A dialog stays hidden until the JavaScript opens it. -->
+<dialog id="dlg" aria-label="Closet item">
+
+<!-- The form inside it. -->
+<form id="f" method="dialog">
+
+<!-- The dashed box for the photo. tabindex="0" lets you reach it with the Tab key; role="button" tells screen readers it can be pressed. -->
+<div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose a picture"></div>
+
+<!-- A hidden photo picker. Clicking the dashed box clicks it for you. accept="image/*" means pictures only. -->
+<input type="file" id="file" accept="image/*" hidden>
+
+<!-- The Name box. "required" means the form will not save without a name; maxlength stops it at 80 letters. -->
+<label>Name <input type="text" id="name" required maxlength="80" placeholder="星 Hoodie, Fox avatar…"></label>
+
+<!-- The menu for choosing which rail the item hangs on. The JavaScript fills in the choices. -->
+<label>Rail <select id="cat"></select></label>
+
+<!-- The Notes box. A textarea can hold more than one line. -->
+<label>Notes <textarea id="note" rows="2" maxlength="300" placeholder="Where it's from, which avatar it fits…"></textarea></label>
+
+<!-- A little help line. -->
+<p class="hint">No picture? It gets a name card. Drop a VRChat screenshot on it any time.</p>
+
+<!-- The row of buttons at the bottom. -->
+<div class="row">
+
+<!-- The Delete button. "hidden" because it only shows when you are editing an item that already exists. -->
+<button type="button" class="btn danger" id="del" hidden>Delete</button>
+
+<!-- The Cancel button. -->
+<button type="button" class="btn" id="cancel">Cancel</button>
+
+<!-- The Save button. type="submit" means pressing it (or Enter) sends the form, which the JavaScript catches. -->
+<button type="submit" class="btn main">Save item</button>
+
+<!-- The end of the row of buttons. -->
+</div>
+
+<!-- The end of the form. -->
+</form>
+
+<!-- The end of the item pop-up. -->
+</dialog>
+
+<!-- The pop-up window for adding a new rail. -->
+<dialog id="cdlg" aria-label="New rail">
+
+<!-- Its form. -->
+<form id="cf" method="dialog">
+
+<!-- The box for the new rail's name. -->
+<label>New rail name <input type="text" id="cname" required maxlength="40" placeholder="Props, Tails, Wings…"></label>
+
+<!-- A warning that only shows when a rail with that name already exists. -->
+<p class="hint" id="cerr" hidden>There's already a rail with that name.</p>
+
+<!-- The row of buttons. -->
+<div class="row">
+
+<!-- Cancel. -->
+<button type="button" class="btn" id="ccancel">Cancel</button>
+
+<!-- Add the rail. -->
+<button type="submit" class="btn main">Add rail</button>
+
+<!-- The end of the row of buttons. -->
+</div>
+
+<!-- The end of the form. -->
+</form>
+
+<!-- The end of the rail pop-up. -->
+</dialog>
+
+<!-- The SCRIPT tag holds the JavaScript: everything below it, until </script>, is what the page DOES. -->
+<script>
+
+// "use strict" asks the browser to point out common mistakes instead of quietly ignoring them.
+"use strict";
+
+// ------------------------------------------------------------------------------------------
+// PART 1: SETTINGS AND LITTLE HELPERS
+// ------------------------------------------------------------------------------------------
+
+// const makes a name for something that never changes. This is the name of the drawer in your browser's storage where the closet is kept.
+const KEY = "vr-closet-v1";
+
+// The rails a new closet starts with: a LIST (an "array"), written between [ and ], the same rails as your desktop app.
+const RAILS = ["Avatars", "Bases", "Tops", "Bottoms", "Dresses", "Sets", "Shoes", "Hair", "Accessories", "Flow Toys", "Skins & Textures", "Decals"];
+
+// Neon colors for the name cards of items that have no photo.
+const NEON = ["#ff3cc7", "#2ef2ff", "#b26bff", "#39ff9c", "#ffd23f", "#ff7a3c", "#4d7cff"];
+
+// A FUNCTION is a recipe with a name. This one is a shortcut: $("q") finds the part of the page whose id is "q".
+function $(id) {
+
+  // "return" hands the answer back to whoever used the recipe: here, the element with that id.
+  return document.getElementById(id);
+
+// The } ends the recipe.
+}
+
+// A recipe for making a new piece of page. el("p", "hint", "Hello") makes <p class="hint">Hello</p>.
+function el(tag, cls, text) {
+
+  // Make an empty element of that kind (a p, a div, a button…).
+  const e = document.createElement(tag);
+
+  // "if" means: only do this when the thing in brackets is true. If we were given a class name, put it on.
+  if (cls) e.className = cls;
+
+  // If we were given words, put them in as plain text. textContent shows text and never runs it, which keeps the page safe.
+  if (text != null) e.textContent = text;
+
+  // Hand the finished element back.
+  return e;
+
+// The end of el.
+}
+
+// A recipe for a plain button with a class and some words.
+function button(cls, text) {
+
+  // Make the button with the el recipe above.
+  const b = el("button", cls, text);
+
+  // A plain button, so it never tries to send a form by accident.
+  b.type = "button";
+
+  // Hand it back.
+  return b;
+
+// The end of button.
+}
+
+// Tidies a bit of text from a saved closet: keeps it only if it really is text, trims spaces off the ends, and cuts it to a maximum length.
+function tidy(value, max) {
+
+  // "a ? b : c" means "if a, then b, otherwise c". Text gets trimmed and cut; anything else becomes empty text "".
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+
+// The end of tidy.
+}
+
+// Checks that a photo is one this page made itself. Anything else (a web address, a file on someone's PC) is turned away.
+function imgOk(s) {
+
+  // A photo the page made starts with "data:image/" and is the picture itself, written out as letters. The part between the / / is a PATTERN the text has to match.
+  return typeof s === "string" && /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
+
+// The end of imgOk.
+}
+
+// Makes a new, unique name tag (an "id") for an item: the time right now, plus a few random letters.
+function newId() {
+
+  // Date.now() is the time in milliseconds. toString(36) writes numbers with letters too, so the tag comes out short.
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// The end of newId.
+}
+
+// Makes a name card picture for an item with no photo: its initials on a neon-to-graphite card.
+function nameCard(name) {
+
+  // Make sure we have some text to work with, even if the name is missing. || means "or, if that is empty".
+  const n = String(name || "?");
+
+  // let makes a name for something that WILL change. We turn the name into a number, so the same name always gets the same color.
+  let h = 0;
+
+  // A LOOP repeats: start i at 0, keep going while i is smaller than the name's length, add 1 to i each time round.
+  for (let i = 0; i < n.length; i++) {
+
+    // Mix each letter's code number into h (>>> 0 keeps it a whole positive number).
+    h = (h * 31 + n.charCodeAt(i)) >>> 0;
+
+  // The end of the loop.
+  }
+
+  // Pick a neon color with h. % is the remainder after dividing, so the answer always lands inside the list.
+  const color = NEON[h % NEON.length];
+
+  // Keep only letters, digits and spaces, then split the name into words.
+  const words = n.replace(/[^A-Za-z0-9 ]/g, "").split(" ").filter(Boolean);
+
+  // The first letter of the first two words, in capitals ("Fox Hoodie" becomes "FH"), or "?" if nothing is left.
+  const initials = words.slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join("") || "?";
+
+  // The picture is SVG, a way of drawing with text. This line starts the drawing, 300 wide and 400 tall.
+  let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">';
+
+  // += adds more text on the end. This adds a color fade from the neon color (top left) to dark graphite (bottom right).
+  svg += '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + color + '"/><stop offset=".85" stop-color="#1b1c20"/></linearGradient></defs>';
+
+  // Fill the whole card with that fade.
+  svg += '<rect width="300" height="400" fill="url(#g)"/>';
+
+  // Write the initials in big white letters in the middle.
+  svg += '<text x="150" y="235" font-family="Segoe UI,sans-serif" font-weight="800" font-size="120" fill="#fff" text-anchor="middle">' + initials + '</text>';
+
+  // Close the drawing.
+  svg += '</svg>';
+
+  // Turn the drawing into an address that an <img> can show.
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+// The end of nameCard.
+}
+
+// Which picture to show for an item: its photo, or its name card when it has none.
+function photoOf(it) {
+
+  // it.img is the item's photo; if it is empty, the || gives the name card instead.
+  return it.img || nameCard(it.name);
+
+// The end of photoOf.
+}
+
+// ------------------------------------------------------------------------------------------
+// PART 2: THE CLOSET'S DATA
+// The closet is an OBJECT (data with named parts, written between { and }):
+//   cats    = the list of rail names
+//   items   = the list of items; each has an id, name, cat (its rail), note, img (its photo) and fav (hearted or not)
+//   outfits = the list of outfits; each has an id, name and ids (the id of every piece in it)
+// ------------------------------------------------------------------------------------------
+
+// A brand-new closet: every rail from the list, no items and no outfits yet.
+function emptyCloset() {
+
+  // RAILS.slice() makes a copy of the rail list, so changing the closet never changes RAILS.
+  return { cats: RAILS.slice(), items: [], outfits: [] };
+
+// The end of emptyCloset.
+}
+
+// Reads a saved closet (or a backup file) carefully, keeping only what makes sense. Never trust saved data blindly.
+function clean(raw) {
+
+  // If it is not a closet at all (no list of items), give up and hand back null, which means "nothing".
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.items)) return null;
+
+  // The rails we end up with. It starts as an empty list.
+  const cats = [];
+
+  // A helper inside clean: it adds a rail name once, ignoring capital letters ("tops" and "Tops" are the same rail).
+  function addRail(name) {
+
+    // Tidy the name. Rail names are at most 40 letters.
+    const n = tidy(name, 40);
+
+    // No name, no rail: hand back empty text.
+    if (!n) return "";
+
+    // Look for a rail that already has this name.
+    const found = cats.find(function (c) { return c.toLowerCase() === n.toLowerCase(); });
+
+    // If there is one, use that.
+    if (found) return found;
+
+    // Otherwise add the new rail to the end of the list.
+    cats.push(n);
+
+    // And use the new one.
+    return n;
+
+  // The end of addRail.
+  }
+
+  // If the saved closet has a list of rails, add each one. forEach means "do this for every thing in the list".
+  if (Array.isArray(raw.cats)) raw.cats.forEach(addRail);
+
+  // The items we keep.
+  const items = [];
+
+  // A SET is a list that remembers what is in it. This one remembers the ids we have seen, so no two items share one.
+  const seen = new Set();
+
+  // Look at each saved item, up to 2000 of them.
+  raw.items.slice(0, 2000).forEach(function (it) {
+
+    // Skip anything that is not an item ("return" here just skips to the next one).
+    if (!it || typeof it !== "object") return;
+
+    // Every item needs a name, at most 80 letters.
+    const name = tidy(it.name, 80);
+
+    // No name, no item: skip it.
+    if (!name) return;
+
+    // Keep the item's id…
+    let id = tidy(it.id, 40);
+
+    // …unless it is missing or already used: then make a new one. ! means "not".
+    if (!id || seen.has(id)) id = newId();
+
+    // Remember this id.
+    seen.add(id);
+
+    // Keep only the parts we know about. Anything else (like a file path from your desktop app) is left behind.
+    items.push({ id: id, name: name, cat: addRail(it.cat) || addRail("Accessories"), note: tidy(it.note, 300), img: imgOk(it.img) ? it.img : "", fav: it.fav === true });
+
+  // The end of looking at each item.
+  });
+
+  // If no rails came with it, start with the usual ones.
+  if (!cats.length) RAILS.forEach(addRail);
+
+  // The outfits we keep.
+  const outfits = [];
+
+  // Look at each saved outfit, up to 500 (or none, if there is no list).
+  (Array.isArray(raw.outfits) ? raw.outfits : []).slice(0, 500).forEach(function (o) {
+
+    // Skip anything that is not an outfit.
+    if (!o || typeof o !== "object") return;
+
+    // Keep only the pieces that are still in the closet. filter keeps the things for which the recipe says true.
+    const pieces = (Array.isArray(o.ids) ? o.ids : []).filter(function (x) { return seen.has(x); });
+
+    // Keep the outfit, with a tidy name.
+    outfits.push({ id: tidy(o.id, 40) || newId(), name: tidy(o.name, 60) || "Untitled outfit", ids: pieces });
+
+  // The end of looking at each outfit.
+  });
+
+  // Hand back the tidy closet.
+  return { cats: cats, items: items, outfits: outfits };
+
+// The end of clean.
+}
+
+// S holds the whole closet while the page is open. It starts as null (nothing).
+let S = null;
+
+// try { … } catch { … }: try something that might go wrong, and if it does, do the catch part instead of crashing.
+try {
+
+  // Read the closet from the browser's storage. It is saved as text, so JSON.parse turns the text back into data.
+  S = clean(JSON.parse(localStorage.getItem(KEY)));
+
+// If reading went wrong…
+} catch (e) {
+
+  // …we simply have no closet yet.
+  S = null;
+
+// The end of try and catch.
+}
+
+// The first time here (or if nothing usable was saved), start a fresh, empty closet.
+if (!S) S = emptyCloset();
+
+// Which rail button is picked on the Closet tab. "All" shows every rail.
+let filter = "All";
+
+// The item being edited in the item pop-up, or null when you are adding a new one.
+let editing = null;
+
+// The photo in the item pop-up right now.
+let img = "";
+
+// Which tab is open: "closet", "fav" (favorites) or "outfits".
+let tab = "closet";
+
+// Which rail button is picked on the Outfits tab.
+let pickCat = "All";
+
+// The outfit being built: its name, the ids of its pieces, and which saved outfit is being edited (null when it is a new one).
+let draft = { name: "", ids: [], edit: null };
+
+// Saves the whole closet into the browser's storage. It runs after every change.
+function save() {
+
+  // Try to save…
+  try {
+
+    // JSON.stringify turns the closet into text, and setItem puts that text in our drawer.
+    localStorage.setItem(KEY, JSON.stringify(S));
+
+    // It worked: hand back true.
+    return true;
+
+  // …and if saving went wrong:
+  } catch (e) {
+
+    // A browser keeps only about 5 MB per page, and photos fill it up. Tell the person what to do.
+    alert("This browser has no room left to save the closet. Export a backup, then remove a few photos.");
+
+    // It did not work: hand back false.
+    return false;
+
+  // The end of try and catch.
+  }
+
+// The end of save.
+}
+
+// ------------------------------------------------------------------------------------------
+// PART 3: SMALL PIECES OF THE PAGE (a hanger, an item card, the arrows)
+// ------------------------------------------------------------------------------------------
+
+// Draws the little coat hanger above each item, in SVG.
+function hanger() {
+
+  // SVG parts are made with their own address (the "namespace"), so the browser knows they are drawing parts.
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+  // The drawing area is 28 wide and 24 tall.
+  s.setAttribute("viewBox", "0 0 28 24");
+
+  // Screen readers skip it: it is only decoration.
+  s.setAttribute("aria-hidden", "true");
+
+  // The CSS class that places and colors it (.hanger, above).
+  s.setAttribute("class", "hanger");
+
+  // The line drawing inside it, called a path.
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+  // The hook and the triangle of the hanger. The letters are pen moves (M moves the pen, a draws a curve, h draws across, z closes the shape).
+  p.setAttribute("d", "M14 2a3 3 0 0 1 1 5.8c-.7.3-1 .9-1 1.6V11M14 11 2 20h24z");
+
+  // Put the path inside the drawing.
+  s.appendChild(p);
+
+  // Hand back the finished hanger.
+  return s;
+
+// The end of hanger.
+}
+
+// Wraps a row (a rail of items, or the rail buttons) with ‹ and › buttons that slide it sideways.
+function arrows(row, label, kind) {
+
+  // A box that holds the left arrow, the row and the right arrow. kind picks its CSS: a rail or a row of chips.
+  const wrap = el("div", "slider " + (kind || "railwrap"));
+
+  // The left arrow button.
+  const prev = button("arrow prev", "‹");
+
+  // The right arrow button.
+  const next = button("arrow next", "›");
+
+  // Words for screen readers, because an arrow alone says nothing.
+  prev.setAttribute("aria-label", "Slide " + label + " left");
+
+  // The same for the right arrow.
+  next.setAttribute("aria-label", "Slide " + label + " right");
+
+  // A small recipe that slides the row by about one screenful. d is -1 for left and 1 for right.
+  function go(d) { row.scrollBy({ left: d * Math.max(160, row.clientWidth - 160) }); }
+
+  // onclick says what happens when you click. Clicking the left arrow slides left.
+  prev.onclick = function () { go(-1); };
+
+  // Clicking the right arrow slides right.
+  next.onclick = function () { go(1); };
+
+  // Whenever the row scrolls, check which arrows should show.
+  row.addEventListener("scroll", function () { syncRail(wrap); }, { passive: true });
+
+  // Remember which row this box holds.
+  wrap.row = row;
+
+  // Put the left arrow, the row and the right arrow into the box, in that order.
+  wrap.append(prev, row, next);
+
+  // Hand back the box.
+  return wrap;
+
+// The end of arrows.
+}
+
+// Hides an arrow when its row cannot slide any further that way.
+function syncRail(wrap) {
+
+  // How far the row can slide in total: its full width minus the part you can see.
+  const max = wrap.row.scrollWidth - wrap.row.clientWidth;
+
+  // At the very start, hide the left arrow.
+  wrap.querySelector(".prev").hidden = wrap.row.scrollLeft <= 2;
+
+  // At the very end, hide the right arrow.
+  wrap.querySelector(".next").hidden = wrap.row.scrollLeft >= max - 2;
+
+// The end of syncRail.
+}
+
+// Checks the arrows on every row at once (after drawing, or when the window changes size).
+function syncArrows() {
+
+  // Find every arrow box on the page and check each one.
+  document.querySelectorAll(".slider").forEach(syncRail);
+
+// The end of syncArrows.
+}
+
+// Makes one item on a rail: its hanger, photo, name and heart. onopen is what clicking it does.
+function card(it, onopen) {
+
+  // The item's box.
+  const d = el("div", "item");
+
+  // The hanger goes in first, so it sits above the photo.
+  d.appendChild(hanger());
+
+  // The photo and name together are one big button.
+  const b = button("open");
+
+  // The photo frame.
+  const pic = el("span", "pic");
+
+  // The photo itself.
+  const im = document.createElement("img");
+
+  // Which picture to show: the photo or the name card.
+  im.src = photoOf(it);
+
+  // alt is the text a screen reader says instead of the picture: the item's name.
+  im.alt = it.name;
+
+  // "lazy" waits to load the picture until you scroll near it, which keeps big closets fast.
+  im.loading = "lazy";
+
+  // The photo goes in its frame.
+  pic.appendChild(im);
+
+  // The frame and the name go in the button.
+  b.append(pic, el("span", "nm", it.name));
+
+  // Clicking the button runs onopen (it opens the item pop-up).
+  b.onclick = onopen;
+
+  // The button goes in the item's box.
+  d.appendChild(b);
+
+  // The heart: a full heart ♥ if hearted, an empty one ♡ if not.
+  const h = button("heart", it.fav ? "♥" : "♡");
+
+  // Mark the heart as pressed or not (the CSS turns pressed hearts pink). String() turns true or false into text.
+  h.setAttribute("aria-pressed", String(!!it.fav));
+
+  // What a screen reader says for the heart.
+  h.setAttribute("aria-label", (it.fav ? "Remove from" : "Add to") + " favorites: " + it.name);
+
+  // Clicking the heart…
+  h.onclick = function (e) {
+
+    // …stops the click from also opening the item underneath…
+    e.stopPropagation();
+
+    // …flips hearted to not hearted, or the other way round…
+    it.fav = !it.fav;
+
+    // …saves the closet…
+    save();
+
+    // …and draws the page again so the heart changes.
+    render();
+
+  // The end of what the heart does.
+  };
+
+  // The heart goes in the item's box.
+  d.appendChild(h);
+
+  // Hand back the finished item.
+  return d;
+
+// The end of card.
+}
+
+// Makes a small picture for the outfit builder. on is what tapping it does; sel is whether it is in the outfit.
+function tile(it, on, sel) {
+
+  // The small picture is a button.
+  const b = button("tile");
+
+  // Mark it as picked or not (picked ones get a pink outline).
+  b.setAttribute("aria-pressed", String(!!sel));
+
+  // The picture.
+  const im = document.createElement("img");
+
+  // Which picture to show.
+  im.src = photoOf(it);
+
+  // Empty alt: the name is written right under it, so a screen reader does not need it twice.
+  im.alt = "";
+
+  // Load it only when it is near.
+  im.loading = "lazy";
+
+  // The picture and its name go in the button.
+  b.append(im, el("span", "tn", it.name));
+
+  // Tapping it runs on.
+  b.onclick = on;
+
+  // Hand it back.
+  return b;
+
+// The end of tile.
+}
+
+// Makes a heading like "Tops  3 items". word is "item" or "outfit"; an "s" is added when there are not exactly 1.
+function heading(text, count, word) {
+
+  // The heading itself.
+  const h = el("h2", null, text);
+
+  // The count, in a smaller font. === means "is exactly".
+  h.appendChild(el("small", null, count + " " + word + (count === 1 ? "" : "s")));
+
+  // Hand it back.
+  return h;
+
+// The end of heading.
+}
+
+// ------------------------------------------------------------------------------------------
+// PART 4: DRAWING THE TABS (Closet, Favorites, Outfits)
+// "Rendering" means drawing the page from the data. Every time something changes, we draw it again.
+// ------------------------------------------------------------------------------------------
+
+// Draws the rail buttons (All, Avatars, Tops…).
+function renderChips() {
+
+  // Find the row of rail buttons.
+  const c = $("chips");
+
+  // Empty it, so we start fresh.
+  c.textContent = "";
+
+  // "All" plus every rail name. concat joins two lists into one.
+  ["All"].concat(S.cats).forEach(function (n) {
+
+    // Make a chip button with the rail's name.
+    const b = button("chip", n);
+
+    // Mark it as picked if it is the rail being shown.
+    b.setAttribute("aria-pressed", String(n === filter));
+
+    // Clicking it shows that rail, and draws the page again.
+    b.onclick = function () { filter = n; render(); };
+
+    // Add it to the row.
+    c.appendChild(b);
+
+  // The end of the rail names.
+  });
+
+// The end of renderChips.
+}
+
+// Draws the Closet tab (and the Favorites tab, which is the same with only hearted items).
+function renderCloset() {
+
+  // First, the rail buttons.
+  renderChips();
+
+  // What is typed in the search box, in small letters so "Fox" also finds "fox".
+  const q = $("q").value.trim().toLowerCase();
+
+  // The place where the rails are drawn.
+  const box = $("rails");
+
+  // Empty it.
+  box.textContent = "";
+
+  // Are we on the Favorites tab?
+  const fav = tab === "fav";
+
+  // Which rails to show: every rail (for Favorites, or when "All" is picked), or just the picked one.
+  const cats = (fav || filter === "All") ? S.cats : [filter];
+
+  // How many items end up on the page, to know if nothing matched.
+  let shown = 0;
+
+  // For each rail we are showing…
+  cats.forEach(function (cat) {
+
+    // …find its items that pass the search (and are hearted, on Favorites). includes means "contains".
+    const list = S.items.filter(function (i) { return i.cat === cat && (!fav || i.fav) && (!q || (i.name + " " + (i.note || "")).toLowerCase().includes(q)); });
+
+    // While searching, or on Favorites, skip rails with nothing to show.
+    if ((q || fav) && !list.length) return;
+
+    // Count what we are about to show.
+    shown += list.length;
+
+    // A box for this rail.
+    const sec = el("div", "sec");
+
+    // Its heading, with how many items it has.
+    sec.appendChild(heading(cat, list.length, "item"));
+
+    // An empty rail gets a message…
+    if (!list.length) sec.appendChild(el("p", "empty", "Nothing on this rail yet. Add an item to hang it here."));
+
+    // …otherwise ("else") draw the rail.
+    else {
+
+      // The rail: a row that slides.
+      const r = el("div", "rail");
+
+      // Hang each item on it. Clicking an item opens it in the pop-up.
+      list.forEach(function (it) { r.appendChild(card(it, function () { openDlg(it); })); });
+
+      // Put the rail in its box, with arrows.
+      sec.appendChild(arrows(r, cat));
+
+    // The end of "else".
+    }
+
+    // Add the rail's box to the page.
+    box.appendChild(sec);
+
+  // The end of the rails.
+  });
+
+  // Now that everything is drawn, show or hide the arrows.
+  syncArrows();
+
+  // A search that found nothing gets a message.
+  if (q && !shown) box.appendChild(el("p", "none", "No items match “" + $("q").value.trim() + "”. Try a shorter search."));
+
+  // An empty Favorites tab gets a message too.
+  if (!q && fav && !shown) box.appendChild(el("p", "none", "No favorites yet. Tap the heart on any item to save it here."));
+
+// The end of renderCloset.
+}
+
+// Adds a piece to the outfit being built, or takes it out if it is already in.
+function toggleDraft(id) {
+
+  // Where the piece is in the outfit's list (-1 means it is not there).
+  const k = draft.ids.indexOf(id);
+
+  // If it is there, splice takes it out…
+  if (k >= 0) draft.ids.splice(k, 1);
+
+  // …otherwise push adds it on the end.
+  else draft.ids.push(id);
+
+  // Draw the Outfits tab again.
+  renderOutfits();
+
+// The end of toggleDraft.
+}
+
+// Draws the Outfits tab: the outfit you are building, the pieces to pick from, and your saved outfits.
+function renderOutfits() {
+
+  // The place where things are drawn.
+  const box = $("rails");
+
+  // Empty it.
+  box.textContent = "";
+
+  // A quick way to find an item by its id: an object whose names are ids.
+  const byId = {};
+
+  // Fill it with every item.
+  S.items.forEach(function (i) { byId[i.id] = i; });
+
+  // The pieces in the outfit being built (any that were deleted are dropped by filter(Boolean)).
+  const picked = draft.ids.map(function (id) { return byId[id]; }).filter(Boolean);
+
+  // The first section: building the outfit.
+  const s1 = el("div", "sec");
+
+  // Its heading, which says "Edit outfit" when you are changing a saved one.
+  s1.appendChild(el("h2", null, draft.edit ? "Edit outfit" : "Build an outfit"));
+
+  // The row of picked pieces.
+  const look = el("div", "look");
+
+  // Nothing picked yet? Say how to start.
+  if (!picked.length) look.appendChild(el("p", "empty", "Tap pieces below to add them to your outfit."));
+
+  // Each picked piece is shown; tapping it takes it out again.
+  picked.forEach(function (it) { const t = tile(it, function () { toggleDraft(it.id); }, true); t.setAttribute("aria-label", "Remove " + it.name); look.appendChild(t); });
+
+  // The row goes in the section.
+  s1.appendChild(look);
+
+  // The box for naming the outfit.
+  const nm = el("input", "oname");
+
+  // It is a text box.
+  nm.type = "text";
+
+  // The pale hint inside it.
+  nm.placeholder = "Name this outfit";
+
+  // At most 60 letters.
+  nm.maxLength = 60;
+
+  // Show the name typed so far.
+  nm.value = draft.name;
+
+  // What a screen reader calls it.
+  nm.setAttribute("aria-label", "Outfit name");
+
+  // oninput runs on every key you type: remember the name.
+  nm.oninput = function () { draft.name = nm.value; };
+
+  // The box goes in the section.
+  s1.appendChild(nm);
+
+  // A row for the buttons.
+  const row = el("div", "bar");
+
+  // A little space above it.
+  row.style.marginTop = "10px";
+
+  // The Save button (it says Update when you are changing a saved outfit).
+  const sv = button("btn main", draft.edit ? "Update outfit" : "Save outfit");
+
+  // Clicking Save…
+  sv.onclick = function () {
+
+    // …needs at least one piece.
+    if (!picked.length) { alert("Add at least one piece first."); return; }
+
+    // The outfit's name, or "Untitled outfit" if none was typed.
+    const name = draft.name.trim() || "Untitled outfit";
+
+    // The ids of its pieces.
+    const ids = picked.map(function (i) { return i.id; });
+
+    // If we are changing a saved outfit, find it.
+    const ex = draft.edit ? S.outfits.find(function (o) { return o.id === draft.edit; }) : null;
+
+    // Change the saved one…
+    if (ex) { ex.name = name; ex.ids = ids; }
+
+    // …or add a new outfit.
+    else S.outfits.push({ id: newId(), name: name, ids: ids });
+
+    // Save the closet.
+    save();
+
+    // Start a fresh, empty outfit.
+    draft = { name: "", ids: [], edit: null };
+
+    // Draw the tab again.
+    renderOutfits();
+
+  // The end of what Save does.
+  };
+
+  // The Clear button (it says Cancel when you are changing a saved outfit).
+  const cl = button("btn", draft.edit ? "Cancel" : "Clear");
+
+  // Clicking it throws away the outfit being built and draws the tab again.
+  cl.onclick = function () { draft = { name: "", ids: [], edit: null }; renderOutfits(); };
+
+  // Both buttons go in the row.
+  row.append(sv, cl);
+
+  // The row goes in the section.
+  s1.appendChild(row);
+
+  // The second section: pieces to pick from.
+  const s2 = el("div", "sec");
+
+  // Its heading.
+  s2.appendChild(el("h2", null, "Pick pieces"));
+
+  // No items at all? Say so…
+  if (!S.items.length) s2.appendChild(el("p", "empty", "No items yet. Add some on the Closet tab first."));
+
+  // …otherwise show them.
+  else {
+
+    // A row of rail buttons, to show just one rail.
+    const cc = el("div", "chips");
+
+    // One chip for "All" and one for each rail.
+    ["All"].concat(S.cats).forEach(function (n) { const b = button("chip", n); b.setAttribute("aria-pressed", String(n === pickCat)); b.onclick = function () { pickCat = n; renderOutfits(); }; cc.appendChild(b); });
+
+    // The chips go in, with arrows.
+    s2.appendChild(arrows(cc, "rails", "chipwrap"));
+
+    // The grid of small pictures.
+    const g = el("div", "pick");
+
+    // Each item on the picked rail becomes a small picture you can tap.
+    S.items.filter(function (i) { return pickCat === "All" || i.cat === pickCat; }).forEach(function (it) { g.appendChild(tile(it, function () { toggleDraft(it.id); }, draft.ids.includes(it.id))); });
+
+    // The grid goes in the section.
+    s2.appendChild(g);
+
+  // The end of "else".
+  }
+
+  // The third section: saved outfits.
+  const s3 = el("div", "sec");
+
+  // Its heading, with how many there are.
+  s3.appendChild(heading("Saved outfits", S.outfits.length, "outfit"));
+
+  // None yet? Say how to make one.
+  if (!S.outfits.length) s3.appendChild(el("p", "empty", "No saved outfits yet. Build one above and tap Save outfit."));
+
+  // For each saved outfit…
+  S.outfits.forEach(function (o) {
+
+    // …a box…
+    const c = el("div", "outfit");
+
+    // …with its name…
+    c.appendChild(el("h3", null, o.name));
+
+    // …and a row of tiny pictures of the pieces that still exist.
+    const lk = el("div", "look");
+
+    // The pieces that still exist.
+    const have = o.ids.map(function (id) { return byId[id]; }).filter(Boolean);
+
+    // If every piece was deleted, say so.
+    if (!have.length) lk.appendChild(el("p", "empty", "The items in this outfit were deleted."));
+
+    // Each piece as a tiny picture.
+    have.forEach(function (it) { const m = el("span", "mini"); const im = document.createElement("img"); im.src = photoOf(it); im.alt = it.name; m.appendChild(im); lk.appendChild(m); });
+
+    // The row of tiny pictures goes in the box.
+    c.appendChild(lk);
+
+    // A row for its buttons.
+    const r = el("div", "bar");
+
+    // The Edit button.
+    const eb = button("btn", "Edit");
+
+    // The Delete button.
+    const db = button("btn danger", "Delete");
+
+    // Edit loads this outfit into the builder at the top, and scrolls up to it.
+    eb.onclick = function () { draft = { name: o.name, ids: have.map(function (i) { return i.id; }), edit: o.id }; renderOutfits(); $("tabs").scrollIntoView({ block: "start", behavior: "smooth" }); };
+
+    // Delete asks first (confirm shows OK and Cancel), then removes the outfit, saves and draws again.
+    db.onclick = function () { if (confirm('Delete the outfit "' + o.name + '"?')) { S.outfits = S.outfits.filter(function (x) { return x !== o; }); if (draft.edit === o.id) draft = { name: "", ids: [], edit: null }; save(); renderOutfits(); } };
+
+    // Both buttons go in the row.
+    r.append(eb, db);
+
+    // The row goes in the box.
+    c.appendChild(r);
+
+    // The box goes in the section.
+    s3.appendChild(c);
+
+  // The end of the saved outfits.
+  });
+
+  // All three sections go on the page.
+  box.append(s1, s2, s3);
+
+  // Show or hide the arrows.
+  syncArrows();
+
+// The end of renderOutfits.
+}
+
+// Draws the whole closet: the tabs, then whichever tab is open.
+function render() {
+
+  // Find the row of tabs.
+  const tabs = $("tabs");
+
+  // Empty it.
+  tabs.textContent = "";
+
+  // Each tab is a pair: its inside name and the words on its button.
+  [["closet", "Closet"], ["fav", "Favorites"], ["outfits", "Outfits"]].forEach(function (t) {
+
+    // Make the tab's button.
+    const b = button("chip", t[1]);
+
+    // Mark the open tab as pressed.
+    b.setAttribute("aria-pressed", String(tab === t[0]));
+
+    // Clicking a tab opens it and draws again.
+    b.onclick = function () { tab = t[0]; render(); };
+
+    // Add it to the row.
+    tabs.appendChild(b);
+
+  // The end of the tabs.
+  });
+
+  // The rail buttons only show on the Closet tab.
+  $("chips").parentNode.hidden = tab !== "closet";
+
+  // The search box hides on the Outfits tab.
+  $("q").hidden = tab === "outfits";
+
+  // Draw the Outfits tab…
+  if (tab === "outfits") renderOutfits();
+
+  // …or the Closet (and Favorites) tab.
+  else renderCloset();
+
+// The end of render.
+}
+
+// ------------------------------------------------------------------------------------------
+// PART 5: THE ITEM POP-UP (adding, changing and deleting items)
+// ------------------------------------------------------------------------------------------
+
+// Shows the photo in the dashed box, or words saying how to add one.
+function setPreview() {
+
+  // Find the dashed box.
+  const d = $("drop");
+
+  // Empty it.
+  d.textContent = "";
+
+  // If there is a photo…
+  if (img) {
+
+    // …make a picture…
+    const i = document.createElement("img");
+
+    // …of that photo…
+    i.src = img;
+
+    // …say what it is for screen readers…
+    i.alt = "Preview";
+
+    // …and put it in the box.
+    d.appendChild(i);
+
+  // Otherwise…
+  } else {
+
+    // …write how to add a photo.
+    d.textContent = "Tap to choose a picture, or drop one here";
+
+  // The end of if and else.
+  }
+
+// The end of setPreview.
+}
+
+// Opens the item pop-up: empty for a new item, or filled in for an item you clicked.
+function openDlg(it) {
+
+  // Remember which item we are editing (null when adding a new one).
+  editing = it || null;
+
+  // Start with the item's photo, or none.
+  img = it ? it.img : "";
+
+  // Fill in the name box.
+  $("name").value = it ? it.name : "";
+
+  // Fill in the notes box.
+  $("note").value = it ? (it.note || "") : "";
+
+  // Find the rail menu.
+  const s = $("cat");
+
+  // Empty it.
+  s.textContent = "";
+
+  // Add one choice for each rail.
+  S.cats.forEach(function (c) { const o = el("option", null, c); o.value = c; s.appendChild(o); });
+
+  // Pick the item's rail; for a new item, the rail being shown (or the first rail).
+  s.value = it ? it.cat : (filter !== "All" ? filter : S.cats[0]);
+
+  // The Delete button only shows for an item that already exists.
+  $("del").hidden = !it;
+
+  // Show the photo.
+  setPreview();
+
+  // Open the pop-up. showModal also dims the page behind it.
+  $("dlg").showModal();
+
+// The end of openDlg.
+}
+
+// Makes a photo smaller (at most 360 pixels), so a whole closet fits in the browser's storage. cb is what to do with the small photo.
+function shrink(file, cb) {
+
+  // A FileReader reads a file from your computer.
+  const fr = new FileReader();
+
+  // onload runs when it has finished reading.
+  fr.onload = function () {
+
+    // Make a picture from what was read.
+    const im = new Image();
+
+    // When the picture is ready…
+    im.onload = function () {
+
+      // …work out how much to shrink it (never make it bigger than it was).
+      const k = Math.min(1, 360 / Math.max(im.width, im.height));
+
+      // A canvas is a blank picture we can draw on.
+      const c = document.createElement("canvas");
+
+      // Make the canvas the new, smaller width…
+      c.width = Math.round(im.width * k);
+
+      // …and height.
+      c.height = Math.round(im.height * k);
+
+      // Draw the photo onto it, at that size.
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+
+      // Save the canvas as a JPEG photo (80% quality) and hand it to cb.
+      cb(c.toDataURL("image/jpeg", .8));
+
+    // The end of "when the picture is ready".
+    };
+
+    // Start loading the picture from what the FileReader read.
+    im.src = fr.result;
+
+  // The end of "when it has finished reading".
+  };
+
+  // Start reading the file.
+  fr.readAsDataURL(file);
+
+// The end of shrink.
+}
+
+// Takes a chosen or dropped file: if it is a picture, shrink it and show it.
+function pick(f) {
+
+  // Only pictures ("image/…"). startsWith checks how text begins.
+  if (f && f.type.startsWith("image/")) shrink(f, function (d) { img = d; setPreview(); });
+
+// The end of pick.
+}
+
+// The dashed photo box.
+const drop = $("drop");
+
+// Clicking it opens the photo picker.
+drop.onclick = function () { $("file").click(); };
+
+// Pressing Enter or the space bar on it does the same (for people using the keyboard).
+drop.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+
+// When a photo is chosen in the picker, take it, then clear the picker so the same photo can be chosen again.
+$("file").onchange = function (e) { pick(e.target.files[0]); e.target.value = ""; };
+
+// While a file is dragged over the box, light it up. preventDefault stops the browser from opening the file itself.
+["dragover", "dragenter"].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.add("over"); }); });
+
+// When the drag leaves, or the file is dropped, stop lighting it up.
+["dragleave", "drop"].forEach(function (n) { drop.addEventListener(n, function (e) { e.preventDefault(); drop.classList.remove("over"); }); });
+
+// When a file is dropped, take it.
+drop.addEventListener("drop", function (e) { pick(e.dataTransfer.files[0]); });
+
+// The Add item button opens an empty pop-up.
+$("add").onclick = function () { openDlg(null); };
+
+// The Cancel button closes the pop-up without saving.
+$("cancel").onclick = function () { $("dlg").close(); };
+
+// When the form is sent (the Save button, or Enter)…
+$("f").onsubmit = function (e) {
+
+  // …stop the browser from doing its own thing with the form…
+  e.preventDefault();
+
+  // …gather what was typed and picked…
+  const data = { name: $("name").value.trim().slice(0, 80), cat: $("cat").value, note: $("note").value.trim().slice(0, 300), img: imgOk(img) ? img : "" };
+
+  // …stop if there is no name…
+  if (!data.name) return;
+
+  // …change the item being edited (Object.assign copies the new parts onto it)…
+  if (editing) Object.assign(editing, data);
+
+  // …or add a new item, with a new id and not hearted.
+  else S.items.push(Object.assign({ id: newId(), fav: false }, data));
+
+  // Save the closet.
+  save();
+
+  // Close the pop-up.
+  $("dlg").close();
+
+  // Draw the page again.
+  render();
+
+// The end of what sending the form does.
+};
+
+// The Delete button in the pop-up…
+$("del").onclick = function () {
+
+  // …asks first, and only goes on if you press OK.
+  if (!editing || !confirm("Delete “" + editing.name + "”?")) return;
+
+  // Remember the deleted item's id.
+  const gone = editing.id;
+
+  // Keep every item except this one.
+  S.items = S.items.filter(function (i) { return i !== editing; });
+
+  // Take it out of every saved outfit.
+  S.outfits.forEach(function (o) { o.ids = o.ids.filter(function (id) { return id !== gone; }); });
+
+  // And out of the outfit being built.
+  draft.ids = draft.ids.filter(function (id) { return id !== gone; });
+
+  // Save.
+  save();
+
+  // Close the pop-up.
+  $("dlg").close();
+
+  // Draw again.
+  render();
+
+// The end of what Delete does.
+};
+
+// Every key typed in the search box draws the closet again, showing only what matches.
+$("q").oninput = render;
+
+// ------------------------------------------------------------------------------------------
+// PART 6: ADDING A RAIL
+// ------------------------------------------------------------------------------------------
+
+// Cancel closes the rail pop-up.
+$("ccancel").onclick = function () { $("cdlg").close(); };
+
+// The Add rail button empties the name box, hides the warning and opens the rail pop-up.
+$("addrail").onclick = function () { $("cname").value = ""; $("cerr").hidden = true; $("cdlg").showModal(); };
+
+// Typing a new name hides the warning again.
+$("cname").oninput = function () { $("cerr").hidden = true; };
+
+// When the rail form is sent…
+$("cf").onsubmit = function (e) {
+
+  // …stop the browser from doing its own thing with the form…
+  e.preventDefault();
+
+  // …read the new rail's name (at most 40 letters)…
+  const n = $("cname").value.trim().slice(0, 40);
+
+  // …stop if it is empty…
+  if (!n) return;
+
+  // …and if a rail with that name already exists, show the warning and stop. some means "is this true for at least one?".
+  if (S.cats.some(function (c) { return c.toLowerCase() === n.toLowerCase(); })) { $("cerr").hidden = false; return; }
+
+  // Add the rail to the end of the list.
+  S.cats.push(n);
+
+  // Save.
+  save();
+
+  // Close the pop-up.
+  $("cdlg").close();
+
+  // Show the Closet tab with every rail, and clear the search, so the new rail can be seen.
+  tab = "closet"; filter = "All"; $("q").value = "";
+
+  // Draw again.
+  render();
+
+  // Find every rail on the page…
+  const secs = document.querySelectorAll("#rails .sec");
+
+  // …and scroll down to the last one, the new rail.
+  if (secs.length) secs[secs.length - 1].scrollIntoView({ behavior: "smooth", block: "center" });
+
+// The end of what the rail form does.
+};
+
+// ------------------------------------------------------------------------------------------
+// PART 7: BACKUPS (saving the closet as a file, and loading it back)
+// ------------------------------------------------------------------------------------------
+
+// Today's date as YYYYMMDD (like 20261019), for the backup's file name.
+function today() {
+
+  // Ask for the date in Denver time, written year-month-day, then take out the dashes.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date()).replace(/-/g, "");
+
+// The end of today.
+}
+
+// The Export backup button…
+$("export").onclick = function () {
+
+  // …makes a link (an "a" element) that we never show…
+  const a = document.createElement("a");
+
+  // …points it at a file made from the closet (a Blob is a file made in the browser)…
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2)], { type: "application/json" }));
+
+  // …gives the file its name…
+  a.download = "vr-closet-" + today() + ".json";
+
+  // …and clicks it, which downloads the file.
+  a.click();
+
+  // A second later, let the browser forget the file to free its memory.
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+
+// The end of what Export does.
+};
+
+// The Import backup button clicks the hidden file picker.
+$("import").onclick = function () { $("importfile").click(); };
+
+// When a backup file is chosen…
+$("importfile").onchange = function (e) {
+
+  // …take the file…
+  const f = e.target.files[0];
+
+  // …clear the picker, so the same file can be chosen again later…
+  e.target.value = "";
+
+  // …stop if nothing was chosen…
+  if (!f) return;
+
+  // …and stop if it is far too big to be a closet (20 MB).
+  if (f.size > 20e6) { alert(f.name + " is over 20 MB, which is too big for a closet backup."); return; }
+
+  // A FileReader to read it.
+  const fr = new FileReader();
+
+  // When it has been read…
+  fr.onload = function () {
+
+    // …try to read it as a closet. If it is not one, d stays null.
+    let d = null;
+
+    // Try…
+    try {
+
+      // …turning the text into data, and cleaning it.
+      d = clean(JSON.parse(fr.result));
+
+    // If that went wrong…
+    } catch (err) {
+
+      // …it is not a closet.
+      d = null;
+
+    // The end of try and catch.
+    }
+
+    // Not a closet? Say so, and stop.
+    if (!d) { alert(f.name + " is not a closet backup."); return; }
+
+    // How many items arrive without a photo (from your desktop app, photos are files on your PC, so they cannot come along).
+    const plain = d.items.filter(function (i) { return !i.img; }).length;
+
+    // Ask before replacing the closet, and say what will happen.
+    if (!confirm("Replace this closet with " + d.items.length + " items and " + d.outfits.length + " outfits from " + f.name + "?" + (plain ? " " + plain + " of them have no photo here and will show a name card." : ""))) return;
+
+    // Keep the old closet, just in case saving fails.
+    const old = S;
+
+    // Use the new closet.
+    S = d;
+
+    // Save it; if that fails, go back to the old one.
+    if (!save()) S = old;
+
+    // Show every rail on the Closet tab…
+    filter = "All"; tab = "closet";
+
+    // …and draw it.
+    render();
+
+  // The end of "when it has been read".
+  };
+
+  // Start reading the file as text.
+  fr.readAsText(f);
+
+// The end of what choosing a backup does.
+};
+
+// ------------------------------------------------------------------------------------------
+// PART 8: THE TWINKLING STARS
+// ------------------------------------------------------------------------------------------
+
+// Fills the star layer with 30 stars. It is a function we run once, right away.
+function makeStars() {
+
+  // The address SVG parts need.
+  const NS = "http://www.w3.org/2000/svg";
+
+  // The star layer.
+  const sky = $("sky");
+
+  // A starting number for "random" numbers that come out the same every time, so the stars never jump around.
+  let seed = 7;
+
+  // Each time it runs, rnd gives the next number between 0 and 1 in that same series.
+  function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+
+  // Make 30 stars: n counts 0, 1, 2 … 29.
+  for (let n = 0; n < 30; n++) {
+
+    // Two out of every three are four-pointed sparkles; the others are small dots.
+    const spark = n % 3 !== 0;
+
+    // Sparkles are 8 to 20 pixels; dots are 2 to 5.
+    const size = spark ? 8 + rnd() * 12 : 2 + rnd() * 3;
+
+    // A tiny drawing for the star.
+    const s = document.createElementNS(NS, "svg");
+
+    // Its drawing area is 24 by 24.
+    s.setAttribute("viewBox", "0 0 24 24");
+
+    // Its size on the page.
+    s.style.width = s.style.height = size + "px";
+
+    // A spot across the case, as a percentage of its width…
+    s.style.left = (rnd() * 97) + "%";
+
+    // …and of its height.
+    s.style.top = (rnd() * 97) + "%";
+
+    // Every other star is pink; the rest are blue.
+    s.style.fill = n % 2 ? "#ff3cc7" : "#2ef2ff";
+
+    // How long one twinkle takes: 2 to 5 seconds (the --t the CSS uses).
+    s.style.setProperty("--t", (2 + rnd() * 3).toFixed(1) + "s");
+
+    // A head start, so the stars do not all twinkle together.
+    s.style.setProperty("--dl", (-rnd() * 6).toFixed(1) + "s");
+
+    // Sparkles are tilted a little; dots are not.
+    s.style.setProperty("--r", spark ? Math.round(rnd() * 30 - 15) + "deg" : "0deg");
+
+    // A sparkle is a path; a dot is a circle.
+    const p = document.createElementNS(NS, spark ? "path" : "circle");
+
+    // The sparkle's four curved points…
+    if (spark) p.setAttribute("d", "M12 0C13 7 17 11 24 12 17 13 13 17 12 24 11 17 7 13 0 12 7 11 11 7 12 0Z");
+
+    // …or the dot: a circle in the middle, radius 10.
+    else { p.setAttribute("cx", "12"); p.setAttribute("cy", "12"); p.setAttribute("r", "10"); }
+
+    // The shape goes in the drawing.
+    s.appendChild(p);
+
+    // The drawing goes in the star layer.
+    sky.appendChild(s);
+
+  // The end of the 30 stars.
+  }
+
+// The end of makeStars.
+}
+
+// ------------------------------------------------------------------------------------------
+// PART 9: START!
+// Everything above only got things ready. These last lines actually start the closet.
+// ------------------------------------------------------------------------------------------
+
+// Make the stars.
+makeStars();
+
+// Wrap the rail buttons in a box with arrows (the same arrows recipe the rails use).
+$("chips").parentNode.insertBefore(arrows($("chips"), "rails", "chipwrap"), $("rails"));
+
+// When the window changes size, check the arrows again.
+window.addEventListener("resize", syncArrows);
+
+// Draw the closet for the first time.
+render();
+
+// The end of the JavaScript. This note is still inside the script tag, so it is written the JavaScript way.
+</script>
+
+<!-- The end of what you see. -->
+</body>
+
+<!-- The end of the page. -->
+</html>
