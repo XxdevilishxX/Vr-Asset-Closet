@@ -1,36 +1,47 @@
-VR CLOSET - every avatar, outfit and accessory in D:\Avatar Creations, on clothing rails
+VR CLOSET - your VRChat avatars, outfits and accessories, hung up on clothing rails
 
-OPENING IT
-  Double-click "VR Closet" on your Desktop, or search "VR Closet" in the Start menu.
-  If the shortcuts ever go missing, run this folder's start command instead:  npm.cmd start
+GETTING IT (first time on a PC)
+  1. Install Node.js (LTS) from https://nodejs.org
+  2. Download this project, open its folder, click the address bar, type "cmd", press Enter.
+  3. Run:  npm install
+  4. Run:  npm start
+  If "npm start" says Electron failed to install (newer npm blocks install scripts), run
+  npm install-scripts approve electron  then  npm rebuild electron
 
-WHAT'S IN IT
-  The first time it opened, it went through D:\Avatar Creations and hung up 136 items:
-  Avatars, Bases, Tops, Bottoms, Dresses, Sets, Shoes, Hair, Accessories, Flow Toys,
-  Skins & Textures and Decals. Zips and the folders unpacked from them count as one item.
-  Your Unity projects ("Unity Avatar Files") are left out on purpose.
-  Items that came with a real preview picture show it. Many others got their photo from the
-  creator's store page (Gumroad, Jinxxy, Payhip, Booth); their notes say which page, and the
-  "Store page" button opens it. The rest show a colored name card.
-  Click any item to give it your own photo (drop a VRChat screenshot on it), rename it, move it
-  to another category or add notes. "Show in folder" opens where it lives on D:.
-  Everything is saved: opening the app just loads your closet, it never re-imports.
+YOUR CLOSET STARTS EMPTY
+  Everyone gets their own closet. It's saved on your PC only, never in this folder, so
+  downloading the app never brings anyone else's things with it.
+  Click "Update" and pick the folder where you keep your avatars and clothes. Every avatar,
+  outfit and accessory in it is hung on a rail, with a photo when it came with a preview.
+  Or click "Add item" to hang things up one at a time.
+
+USING IT
+  Click an item to change its photo (drop a VRChat screenshot on it), name, rail or notes.
+  "Open in folder" goes to where it lives on your PC; "Change location" points it somewhere new.
+  "Edit rails" lets you drag clothes along or between rails, and rename, reorder or delete rails.
+  "Add rail" makes a new rail. "Style" changes the colors and background.
+  "Profile" sets your closet's name, your name, and which avatar folder Update checks.
 
 ADDING NEW STUFF
-  Download new things into D:\Avatar Creations as usual, then click "Update".
+  Download new things into your avatar folder as usual, then click "Update".
   Only new things get added. Anything you deleted from the closet stays deleted, and your
-  photos, names and notes are never touched. "Add item" still adds things by hand.
+  photos, names and notes are never touched.
+
+INVITING PEOPLE
+  "Invite" makes one file of your closet (photos included) that anyone can open in their web
+  browser, no app needed. They can look at every rail and open items, but can't change anything.
+  Your folder locations aren't in it. Send it in Discord, a DM or email.
 
 WHERE YOUR CLOSET IS SAVED
-  %APPDATA%\VR Closet\closet.json   (items, categories, outfits, favorites)
+  %APPDATA%\VR Closet\closet.json   (items, rails, outfits, favorites, profile)
   %APPDATA%\VR Closet\images\       (the photos, shrunk to 480 px)
-  Back up that folder to keep your closet. Nothing in D:\Avatar Creations is ever changed.
+  Back up that folder to keep your closet. Nothing in your avatar folder is ever changed.
 
 FILES
-  index.html    the closet itself (your original page, now saving to disk instead of the browser)
-  importer.js   scans D:\Avatar Creations: which folder is which category, the hand-picked
-                photos, the nicer names and the things it skips (texture packs, duplicates)
-  main.js       the desktop window, saving, photo thumbnails, the "Update" button
+  index.html    the closet itself (also the page an Invite file is made from)
+  importer.js   scans your avatar folder: which folder is which rail, photos, nicer names.
+                Dev's own folder layout has hand-tuned rules; any other folder gets a general scan
+  main.js       the desktop window, saving, photo thumbnails, Update, Invite
   preload.js    the bridge between the page and main.js
   closet.ico    the icon (made by scripts/make-icon.js)
   scripts/trim-electron.js  runs after "npm install": removes ~40 MB of unused language files

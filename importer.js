@@ -1,10 +1,13 @@
-// Scans "D:\Avatar Creations" and turns every avatar, outfit and accessory into a closet item.
+// Scans an avatar folder and turns every avatar, outfit and accessory into a closet item.
 // Each item gets a photo: a hand-picked one from PHOTOS, else a preview/thumbnail found in its
-// folder, else none (the app draws a name card; texture maps looked like noise as photos). Items already imported (by key) are never re-added, even if you deleted them.
+// folder, else none (the app draws a name card; texture maps looked like noise as photos).
+// Items already imported (by key) are never re-added, even if you deleted them.
+// A folder laid out like Dev's (Avatars + Assets\Clothes, Hair...) uses the tuned rules below;
+// any other folder gets the general scan in scanAny().
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = 'D:\\Avatar Creations';
+let ROOT = '';   // the folder being scanned; keys are paths relative to it
 const PKG = /\.(zip|rar|7z|unitypackage|gz|fbx)$/i;
 const IMG = /\.(png|jpe?g|webp|gif)$/i;
 // Folders inside Unity projects/packages that never hold item photos
@@ -181,8 +184,10 @@ function findPhoto(dir) {
   return best;
 }
 
-// Lists every item: { key, name, cat, src, photo }
-function scan() {
+// Lists every item in `root`: { key, name, cat, src, photo }
+function scan(root) {
+  ROOT = root;
+  if (!exists(path.join(root, 'Avatars')) || !exists(path.join(root, 'Assets'))) return scanAny();
   const out = [], seen = new Set();
   function add(key, cat, isDir) {
     if (SKIP.has(key)) return;
@@ -224,10 +229,44 @@ function scan() {
   return out;
 }
 
-module.exports = { ROOT, scan };
+// Rail for a name: 'Clothes' means "sort it into Tops/Bottoms/..." by its own name
+function guessCat(n) {
+  const s = n.toLowerCase();
+  if (/avatar|\bavi\b|\bavis\b|model/.test(s)) return 'Avatars';
+  if (/\bbase|bases\b/.test(s)) return 'Bases';
+  if (/hair|ponytail|bun\b|pigtail|braid/.test(s)) return 'Hair';
+  if (/cloth|outfit|wear|fits?\b|top|shirt|hoodie|sweater|jacket|pant|jean|short|skirt|dress|bikini|lingerie|sock|heel|shoe|boot/.test(s)) return 'Clothes';
+  if (/accessor|prop|collar|choker|necklace|chain|earring|piercing|glasses|hat|wing|tail|ears|lanyard|kandi|bag/.test(s)) return 'Accessories';
+  if (/texture|skin|tattoo|decal|makeup|eye/.test(s)) return 'Skins & Textures';
+  if (/fan|poi|silk|flow|staff/.test(s)) return 'Flow Toys';
+  return '';
+}
+// General scan for any folder: a subfolder named like a rail ("Clothes", "Hair", "Avatars"...)
+// has its contents hung on that rail; everything else at the top is one item, sorted by its name.
+function scanAny() {
+  const out = [], seen = new Set(), SKIPTOP = /^(\.|library$|temp$|logs$|packages$|tools?$)/i;
+  function add(key, cat) {
+    const src = path.join(ROOT, key), base = path.basename(key), name = cleanName(base), id = norm(base);
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    let isDir = false; try { isDir = fs.statSync(src).isDirectory(); } catch {}
+    if (cat === 'Clothes') cat = clothesCat(name);
+    out.push({ key, name, cat: cat || 'Unsorted', src, photo: isDir ? findPhoto(src) : null });
+  }
+  for (const e of ls(ROOT).sort((a, b) => b.isDirectory() - a.isDirectory())) {
+    if (SKIPTOP.test(e.name) || !(e.isDirectory() || PKG.test(e.name))) continue;
+    const rail = e.isDirectory() && guessCat(e.name);
+    const inner = rail ? ls(path.join(ROOT, e.name)).filter(c => c.isDirectory() || PKG.test(c.name)) : [];
+    if (rail && inner.length && !/[-_ ]by[-_ ]/i.test(e.name)) inner.forEach(c => add(path.join(e.name, c.name), guessCat(c.name) || rail));
+    else add(e.name, rail || guessCat(e.name));
+  }
+  return out;
+}
+
+module.exports = { scan };
 
 if (require.main === module) {
-  const items = scan();
+  const items = scan(process.argv[2] || 'D:\\Avatar Creations');
   for (const i of items) console.log(`${i.cat.padEnd(16)} ${i.name.padEnd(44)} ${i.photo ? path.relative(ROOT, i.photo) : '-'}`);
   console.log(items.length + ' items, ' + items.filter(i => i.photo).length + ' with photos');
 }
