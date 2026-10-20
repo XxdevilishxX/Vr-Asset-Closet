@@ -1,0 +1,2 @@
+# Electron itself (~200 MB); "npm install" downloads it again
+node_modules/

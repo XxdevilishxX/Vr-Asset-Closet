@@ -1,0 +1,17 @@
+{
+  "name": "vr-closet",
+  "productName": "VR Closet",
+  "version": "1.0.0",
+  "description": "My VR closet: every avatar, outfit and accessory from D:\\Avatar Creations, with photos",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "node scripts/trim-electron.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}
