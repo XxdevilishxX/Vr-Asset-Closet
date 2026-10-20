@@ -61,6 +61,7 @@ function rescan() {
     added++;
   }
   S.cats.sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
+  S.updated = new Date().toISOString();
   save(S);
   return { added, state: S };
 }
@@ -84,11 +85,12 @@ ipcMain.on('reveal', (_e, p) => {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1180, height: 860, minWidth: 420, minHeight: 500,
+    width: 1180, height: 860, minWidth: 420, minHeight: 500, show: false,
     title: 'VR Closet', backgroundColor: '#ece7f7', autoHideMenuBar: true,
     icon: path.join(__dirname, 'closet.ico'),
     webPreferences: { preload: path.join(__dirname, 'preload.js') }
   });
+  win.once('ready-to-show', () => win.show());   // appear with the closet already drawn, not a blank window
   win.removeMenu();
   win.loadFile('index.html');
   // Links open in the normal browser, never inside the closet

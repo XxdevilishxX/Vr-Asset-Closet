@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>My VR Closet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- loaded without blocking, so the closet draws at once even offline (system fonts until these arrive) -->
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{--wall:#ece7f7;--ink:#241b36;--muted:#6d6385;--card:#fff;--line:#d6cdea;--wood:#8a6544;--tag:#ff5a8a;--tagink:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--wall:#1c1629;--ink:#f0eaff;--muted:#a79bc4;--card:#2a2240;--line:#3d3358;--wood:#b58a5f;--tag:#ff6f9a;--tagink:#241b36;color-scheme:dark}}
@@ -94,6 +95,7 @@ label{display:grid;gap:4px;font-weight:500}
 .busy>div{background:var(--wall);color:var(--ink);border-radius:16px;padding:22px 24px;max-width:360px;display:grid;gap:6px;text-align:center}
 .busy span{color:var(--muted);font-size:.9rem}
 #where{overflow-wrap:anywhere}
+.status{margin:-6px 0 14px;color:var(--muted);font-size:.95rem}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}#sky svg,#galaxy{animation:none}}
 </style>
 </head>
@@ -101,12 +103,13 @@ label{display:grid;gap:4px;font-weight:500}
 <div id="sky" aria-hidden="true"><canvas id="neb"></canvas><canvas id="paw"></canvas><div id="galaxy"><canvas id="gcv"></canvas></div></div>
 <div class="wrap">
   <h1>My VR closet</h1>
+  <p class="status" id="status"></p>
   <div class="bar">
     <input type="search" id="q" placeholder="Search avatars and outfits" aria-label="Search">
     <button class="btn main" id="add">Add item</button>
     <button class="btn" id="addrail">Add rail</button>
     <button class="btn" id="theme">Style</button>
-    <button class="btn" id="rescan" title="Add anything new from D:\Avatar Creations">Rescan folder</button>
+    <button class="btn" id="rescan" title="Check D:\Avatar Creations and add anything new">Update</button>
   </div>
   <div class="chips tabs" id="tabs" role="group" aria-label="Sections"></div>
   <div class="chips" id="chips" role="group" aria-label="Categories"></div>
@@ -122,6 +125,7 @@ label{display:grid;gap:4px;font-weight:500}
     <label>Notes<textarea id="note" rows="2" maxlength="300" placeholder="Where it’s from, which avatar it fits…"></textarea></label>
     <p class="hint" id="where" hidden></p>
     <div class="row">
+      <button type="button" class="btn" id="store" hidden>Store page</button>
       <button type="button" class="btn" id="reveal" hidden>Show in folder</button>
       <button type="button" class="btn danger" id="del" hidden>Delete</button>
       <button type="button" class="btn" id="cancel">Cancel</button>
@@ -141,7 +145,7 @@ label{display:grid;gap:4px;font-weight:500}
   </form>
 </dialog>
 
-<div id="busy" class="busy" hidden><div><b>Hanging up your clothes…</b><span>Going through D:\Avatar Creations and making photos. This takes a minute the first time.</span></div></div>
+<div id="busy" class="busy" hidden><div><b id="busyt">Hanging up your clothes…</b><span id="busys">Going through D:\Avatar Creations and making photos. This takes a minute the first time.</span></div></div>
 
 <dialog id="tdlg">
   <div style="padding:18px;display:grid;gap:14px">
@@ -240,7 +244,7 @@ var tab='closet',pickCat='All',draft={name:'',ids:[],edit:null};
 function card(it,onopen){
   var d=el('div','item');d.appendChild(hanger());
   var b=el('button','open');b.type='button';
-  var pic=el('span','pic'),im=document.createElement('img');im.src=src(it);im.alt=it.name;im.loading='lazy';pic.appendChild(im);
+  var pic=el('span','pic'),im=document.createElement('img');im.src=src(it);im.alt=it.name;pic.appendChild(im);
   b.appendChild(pic);b.appendChild(el('span','nm',it.name));b.onclick=onopen;d.appendChild(b);
   var h=el('button','heart',it.fav?'♥':'♡');h.type='button';
   h.setAttribute('aria-pressed',String(!!it.fav));h.setAttribute('aria-label',(it.fav?'Remove from':'Add to')+' favorites: '+it.name);
@@ -313,7 +317,14 @@ function renderOutfits(){
   box.appendChild(s1);box.appendChild(s2);box.appendChild(s3);
   syncArrows();
 }
+function storeUrl(it){var m=it&&/https?:\/\/\S+/.exec(it.note||'');return m?m[0]:''}
+function renderStatus(){
+  var n=S.items.length,t=n+(n===1?' item':' items')+' saved';
+  if(S.updated)t+=' · folder last checked '+new Date(S.updated).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+  $('status').textContent=t;
+}
 function render(){
+  renderStatus();
   var tabs=$('tabs');tabs.textContent='';
   [['closet','Closet'],['fav','Favorites'],['outfits','Outfits']].forEach(function(t){
     var b=el('button','chip',t[1]);b.type='button';b.setAttribute('aria-pressed',String(tab===t[0]));
@@ -330,6 +341,7 @@ function openDlg(it){
   s.value=it?it.cat:(filter!=='All'?filter:S.cats[0]);
   $('del').hidden=!it;
   var w=it&&it.src;$('reveal').hidden=!w;$('where').hidden=!w;if(w)$('where').textContent='From '+it.src;
+  $('store').hidden=!storeUrl(it);
   setPreview();$('dlg').showModal();
 }
 function shrink(file,cb){
@@ -363,6 +375,7 @@ $('del').onclick=function(){
 };
 $('q').oninput=render;
 $('reveal').onclick=function(){if(editing&&editing.src)window.closet.reveal(editing.src)};
+$('store').onclick=function(){var u=storeUrl(editing);if(u)window.open(u)};   // main.js opens it in your browser
 $('ccancel').onclick=function(){$('cdlg').close()};
 $('addrail').onclick=function(){$('cname').value='';$('cerr').hidden=true;$('cdlg').showModal()};
 $('cname').oninput=function(){$('cerr').hidden=true};
@@ -375,10 +388,12 @@ $('cf').onsubmit=function(e){
 };
 /* ---- importing from D:\Avatar Creations ---- */
 function rescan(first){
+  $('busyt').textContent=first?'Hanging up your clothes…':'Checking your folder…';
+  $('busys').textContent=first?'Going through D:\\Avatar Creations and making photos. This only happens the first time.':'Looking for anything new in D:\\Avatar Creations. Everything already in your closet stays as it is.';
   $('busy').hidden=false;
   window.closet.rescan().then(function(r){
     $('busy').hidden=true;S=r.state;if(!S.outfits)S.outfits=[];render();
-    if(!first)alert(r.added?'Added '+r.added+' new '+(r.added===1?'item':'items')+' from your folder.':'Nothing new in your folder. Everything is already in the closet.');
+    if(!first)alert(r.added?'Added '+r.added+' new '+(r.added===1?'item':'items')+' from your folder.':'Nothing new in your folder. Your closet is up to date.');
   },function(){$('busy').hidden=true;alert('Couldn’t read D:\\Avatar Creations. Is the drive connected?')});
 }
 $('rescan').onclick=function(){rescan(false)};
