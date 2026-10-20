@@ -1,2 +1,5 @@
 # Electron itself (~200 MB); "npm install" downloads it again
 node_modules/
+
+# Invite files made by older versions hold your whole closet; keep them off GitHub
+*Invite*.html

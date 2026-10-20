@@ -6,5 +6,8 @@ contextBridge.exposeInMainWorld('closet', {
   rescan: pick => ipcRenderer.invoke('rescan', pick),
   reveal: p => ipcRenderer.invoke('reveal', p),
   pickLocation: current => ipcRenderer.invoke('pick-location', current),
-  makeInvite: look => ipcRenderer.invoke('make-invite', look)
+  inviteInfo: () => ipcRenderer.invoke('invite-info'),
+  invite: opts => ipcRenderer.invoke('invite', opts),
+  openLink: url => ipcRenderer.send('open-link', url),
+  copy: text => ipcRenderer.send('copy', text)
 });

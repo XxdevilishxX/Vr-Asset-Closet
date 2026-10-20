@@ -1,4 +1,5 @@
-const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } = require('electron');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -119,38 +120,78 @@ ipcMain.handle('pick-location', async (e, current) => {
   return { path: r.filePaths[0], key: insideRoot(r.filePaths[0], root) };
 });
 
-// Invite: writes a single HTML file of the closet that opens read-only in any browser. Photos are
-// embedded; folder locations and import history are left out, since they're about this PC only.
+// Invite: publishes a read-only copy of the closet as a web page on GitHub Pages and returns its
+// link. Photos are embedded in the page; folder locations and import history are left out, since
+// they're about this PC only. The page goes on its own "gh-pages" branch, so the app's code (and
+// what people download) never contains anyone's closet.
 const MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
-ipcMain.handle('make-invite', async (e, look) => {
-  const S = load() || { items: [], cats: START_RAILS.slice(), outfits: [] };
-  const title = (S.profile && S.profile.title) || 'My VR closet';
-  const test = process.env.VR_CLOSET_INVITE_PATH;   // for testing: save here without asking
-  const r = test ? { filePath: test } : await dialog.showSaveDialog(BrowserWindow.fromWebContents(e.sender), {
-    title: 'Save your invite', buttonLabel: 'Save invite',
-    defaultPath: path.join(app.getPath('downloads'), title.replace(/[\\/:*?"<>|]+/g, '').trim() + '.html'),
-    filters: [{ name: 'Web page', extensions: ['html'] }]
-  });
-  if (r.canceled || !r.filePath) return null;
+function sharePage(S, look) {
   const pic = name => {
     try { return `data:${MIME[path.extname(name).toLowerCase()] || 'image/jpeg'};base64,` + fs.readFileSync(path.join(IMAGES, name)).toString('base64'); }
     catch { return ''; }
   };
   const shared = {
-    cats: S.cats, outfits: S.outfits || [], profile: S.profile || {}, look: look || {},
+    cats: S.cats, outfits: S.outfits || [], profile: { title: S.profile && S.profile.title, name: S.profile && S.profile.name }, look: look || {},
     items: S.items.map(i => ({ id: i.id, name: i.name, cat: i.cat, note: i.note || '', img: i.img && !/^data:/.test(i.img) ? pic(i.img) : (i.img || '') }))
   };
-  const stub = '<script>var SHARED=' + JSON.stringify(shared).replace(/</g, '\\u003c') + ';\n' +
+  const stub = '<script>var SHARED=' + JSON.stringify(shared).replace(/</g, '\u003c') + ';\n' +
     'window.closet={viewOnly:true,load:function(){return{state:SHARED,imgBase:""}},save:function(){return true},' +
     'saveImage:function(){return""},rescan:function(){return Promise.resolve({cancelled:true})},' +
     'reveal:function(){return Promise.resolve(false)},pickLocation:function(){return Promise.resolve(null)},' +
-    'makeInvite:function(){return Promise.resolve(null)}};</script>\n';
+    'invite:function(){return Promise.resolve(null)}};</script>\n';
   const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'), at = html.search(/<script>\r?\n\(function\(\)\{/);
   if (at < 0) throw new Error('index.html changed: cannot find the closet script');
-  const page = html.slice(0, at) + stub + html.slice(at);
-  fs.writeFileSync(r.filePath, page);
-  if (!test) shell.showItemInFolder(r.filePath);
-  return { path: r.filePath, mb: (Buffer.byteLength(page) / 1048576).toFixed(1) };
+  return html.slice(0, at) + stub + html.slice(at);
+}
+// "owner/repo" of the GitHub repository this app was cloned from, if any (a guess for Invite)
+function repoGuess() {
+  try {
+    const m = /url\s*=\s*https:\/\/github\.com\/([\w.-]+\/[\w.-]+?)(?:\.git)?\s*$/m.exec(fs.readFileSync(path.join(__dirname, '.git', 'config'), 'utf8'));
+    return m ? m[1] : '';
+  } catch { return ''; }
+}
+function gitExe() {
+  for (const p of ['C:\Program Files\Git\cmd\git.exe', 'C:\Program Files (x86)\Git\cmd\git.exe']) if (fs.existsSync(p)) return p;
+  return 'git';
+}
+function git(args, cwd) {
+  return new Promise((res, rej) => execFile(gitExe(), args, { cwd, timeout: 180000, windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } },
+    (err, out, errOut) => err ? rej(new Error((errOut || err.message).trim())) : res(out)));
+}
+ipcMain.on('open-link', (_e, url) => { if (/^https:\/\//.test(String(url))) shell.openExternal(url); });
+ipcMain.on('copy', (_e, text) => clipboard.writeText(String(text)));
+const linkFor = repo => { const [o, r] = repo.split('/'); return `https://${o.toLowerCase()}.github.io/${r}/`; };
+ipcMain.handle('invite-info', () => {
+  const S = load() || {};
+  return { repo: (S.share && S.share.repo) || repoGuess(), link: S.share && S.share.link, when: S.share && S.share.when };
+});
+ipcMain.handle('invite', async (_e, { repo, look }) => {
+  repo = String(repo || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/$/g, '');
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) return { error: 'Type your GitHub repository as name/repo, like XxdevilishxX/Vr-Asset-Closet.' };
+  const S = load() || { items: [], cats: START_RAILS.slice(), outfits: [] };
+  const dir = path.join(DATA, 'publish'), remote = process.env.VR_CLOSET_PUBLISH_REMOTE || `https://github.com/${repo}.git`;
+  try {
+    if (!fs.existsSync(path.join(dir, '.git'))) { fs.mkdirSync(dir, { recursive: true }); await git(['init', '-q', '-b', 'gh-pages'], dir); }
+    await git(['remote', 'remove', 'origin'], dir).catch(() => {});
+    await git(['remote', 'add', 'origin', remote], dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), sharePage(S, look));
+    fs.writeFileSync(path.join(dir, '.nojekyll'), '');
+    await git(['add', '-A'], dir);
+    if ((await git(['status', '--porcelain'], dir)).trim())
+      await git(['-c', 'user.name=VR Closet', '-c', 'user.email=vr-closet@users.noreply.github.com', 'commit', '-q', '-m', 'Update closet'], dir);
+    await git(['push', '-q', '-f', 'origin', 'gh-pages'], dir);   // the branch only ever holds the latest closet page
+  } catch (err) {
+    return { error: /not found|repository .* not found/i.test(err.message) ? `GitHub couldn't find ${repo}. Check the name, and that you're signed in to the account that owns it.`
+      : /ENOENT|is not recognized/i.test(err.message) ? 'Git isn\u2019t installed on this PC. Install it from https://git-scm.com, then try again.'
+      : 'Couldn\u2019t publish: ' + err.message.split('\n').pop() };
+  }
+  const link = linkFor(repo);
+  S.share = { repo, link, when: new Date().toISOString() };
+  save(S);
+  clipboard.writeText(link);
+  let live = false;
+  try { live = (await fetch(link, { method: 'HEAD' })).ok; } catch {}
+  return { link, live, settings: `https://github.com/${repo}/settings/pages`, state: S };
 });
 
 function createWindow() {

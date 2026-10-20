@@ -28,9 +28,14 @@ ADDING NEW STUFF
   photos, names and notes are never touched.
 
 INVITING PEOPLE
-  "Invite" makes one file of your closet (photos included) that anyone can open in their web
-  browser, no app needed. They can look at every rail and open items, but can't change anything.
-  Your folder locations aren't in it. Send it in Discord, a DM or email.
+  "Invite" publishes a view-only copy of your closet to GitHub Pages and copies its link, e.g.
+  https://your-name.github.io/your-repo/ . Anyone with the link can open it in a web browser,
+  no app needed: they can look at every rail and open items, but can't change anything.
+  Your folder locations aren't in it. It goes on the repository's "gh-pages" branch, so the
+  app's code (what people download) never includes your closet.
+  You need Git installed and a GitHub repository you own. The first time, turn on Pages once:
+  repository Settings -> Pages -> Source "Deploy from a branch" -> branch "gh-pages" -> Save.
+  After changing your closet, click Invite -> "Update invite link" to refresh the page.
 
 WHERE YOUR CLOSET IS SAVED
   %APPDATA%\VR Closet\closet.json   (items, rails, outfits, favorites, profile)

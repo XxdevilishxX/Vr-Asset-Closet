@@ -106,6 +106,12 @@ label{display:grid;gap:4px;font-weight:500}
 .view #add,.view #addrail,.view #arrange,.view #rescan,.view #profile,.view #invite,.view .heart,
 .view #moveloc,.view #reveal,.view #del,.view #f .main,.view #where{display:none!important}
 .view .drop{cursor:default}
+.access{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:10px;margin:0}
+.access legend{padding:0 6px;font-weight:700}
+.access label{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+.access label.off{opacity:.55}
+.access input{margin-top:4px}
+.ires{display:grid;gap:8px}
 /* edit-rails mode: drag clothes between and along rails, rail tools in each heading */
 #arrange[aria-pressed=true]{background:var(--tag);border-color:var(--tag);color:var(--tagink);font-weight:700}
 #arrhint{margin:10px 0 0}
@@ -197,12 +203,25 @@ label{display:grid;gap:4px;font-weight:500}
 <dialog id="idlg">
   <div style="padding:18px;display:grid;gap:12px">
     <h2 style="margin:0">Invite people to see your closet</h2>
-    <p style="margin:0">This makes a single file of your closet that anyone can open in their web browser, with no app to install. They can look at every rail, open items and visit store pages, but they can’t change anything.</p>
-    <p class="hint" style="margin:0">Your folder locations on this PC aren’t included. Send the file in Discord, a DM or email.</p>
-    <p class="hint" id="idone" hidden style="margin:0;color:var(--ink)"></p>
+    <fieldset class="access">
+      <legend>What can they do?</legend>
+      <label><input type="radio" name="access" value="view" checked> <span><b>View only</b><br><span class="hint">They can look at every rail, open items and visit store pages, but can’t change anything.</span></span></label>
+      <label class="off"><input type="radio" name="access" value="full" disabled> <span><b>Access to everything</b><br><span class="hint">Not available with GitHub Pages: it’s a web page with nowhere to save changes. It needs an online database.</span></span></label>
+    </fieldset>
+    <label>Your GitHub repository<input type="text" id="irepo" placeholder="your-name/your-repo" spellcheck="false"></label>
+    <p class="hint" style="margin:0">Your closet becomes a public web page on GitHub Pages. Anyone with the link can see it, but your folder locations aren’t included. After you change your closet, click Invite again to update the page.</p>
+    <div id="ires" class="ires" hidden>
+      <input type="text" id="ilink" readonly aria-label="Invite link">
+      <div class="row" style="justify-content:flex-start">
+        <button type="button" class="btn main" id="icopy">Copy link</button>
+        <button type="button" class="btn" id="iopen">Open</button>
+      </div>
+      <p class="hint" id="inote" style="margin:0"></p>
+      <button type="button" class="btn" id="isettings" hidden>Open GitHub Pages settings</button>
+    </div>
     <div class="row">
       <button type="button" class="btn" id="iclose">Close</button>
-      <button type="button" class="btn main" id="imake">Make invite file</button>
+      <button type="button" class="btn main" id="imake">Make invite link</button>
     </div>
   </div>
 </dialog>
@@ -615,15 +634,34 @@ $('pf').onsubmit=function(e){
   save();$('pdlg').close();render();
 };
 $('prootbtn').onclick=function(){$('pdlg').close();rescan(true)};   // pick a folder, then bring in what's new there
-/* ---- invite: a view-only copy of the closet in one file ---- */
-$('invite').onclick=function(){$('idone').hidden=true;$('idlg').showModal()};
+/* ---- invite: a view-only link to the closet, published on GitHub Pages ---- */
+var pagesSettings='';
+function showLink(link,note,settings){
+  $('ires').hidden=!link;$('ilink').value=link||'';$('inote').textContent=note||'';
+  pagesSettings=settings||'';$('isettings').hidden=!settings;
+}
+$('invite').onclick=function(){
+  showLink('');$('imake').textContent='Make invite link';
+  window.closet.inviteInfo().then(function(i){
+    $('irepo').value=i.repo||'';
+    if(i.link){showLink(i.link,'Last updated '+new Date(i.when).toLocaleString()+'. Click Update invite link to show your latest changes.');$('imake').textContent='Update invite link'}
+  });
+  $('idlg').showModal();
+};
 $('iclose').onclick=function(){$('idlg').close()};
+$('icopy').onclick=function(){window.closet.copy($('ilink').value);this.textContent='Copied!';var b=this;setTimeout(function(){b.textContent='Copy link'},1500)};
+$('iopen').onclick=function(){window.closet.openLink($('ilink').value)};
+$('isettings').onclick=function(){window.closet.openLink(pagesSettings)};
 $('imake').onclick=function(){
-  var b=this;b.disabled=true;b.textContent='Making it…';
-  window.closet.makeInvite({theme:T,bg:BG}).then(function(r){
-    b.disabled=false;b.textContent='Make invite file';if(!r)return;
-    $('idone').hidden=false;$('idone').textContent='Saved: '+r.path+' ('+r.mb+' MB). It’s open in File Explorer so you can drag it into Discord or attach it.';
-  },function(){b.disabled=false;b.textContent='Make invite file';alert('Couldn’t make the invite file.')});
+  var b=this,label=b.textContent;b.disabled=true;b.textContent='Publishing…';
+  window.closet.invite({repo:$('irepo').value,look:{theme:T,bg:BG}}).then(function(r){
+    b.disabled=false;b.textContent='Update invite link';
+    if(r.error){b.textContent=label;alert(r.error);return}
+    S.share=r.state.share;
+    showLink(r.link,r.live?'Copied! Paste it in Discord, a DM or anywhere. It can take a minute to show your newest changes.'
+      :'Copied! The page is published. If the link says 404, GitHub Pages isn’t turned on for this repository yet: open the settings below, set Source to “Deploy from a branch”, pick the gh-pages branch, click Save, and wait a minute or two.',
+      r.live?'':r.settings);
+  },function(){b.disabled=false;b.textContent=label;alert('Couldn’t publish the invite link.')});
 };
 /* ---- color personalization ---- */
 var TK='vr-closet-theme-v1',T=null;
@@ -632,7 +670,10 @@ var PRE=[['Original',null],
 ['Midnight',{wall:'#12162b',card:'#1d2342',ink:'#e8ecff',tag:'#5ee0c1',wood:'#8f9bd6'}],
 ['Mint',{wall:'#e3f4ec',card:'#ffffff',ink:'#12372a',tag:'#1f9d6b',wood:'#a3764b'}],
 ['Sunset',{wall:'#fde8d9',card:'#fff8f2',ink:'#3a1f1a',tag:'#e5484d',wood:'#8a5a3b'}]];
+// Your style is saved in the closet file (S.look), so it never gets lost; older closets kept it in
+// browser storage, which is read once and then copied over.
 try{T=JSON.parse(localStorage.getItem(TK))}catch(e){T=null}
+if(!VIEW&&S.look&&'theme' in S.look)T=S.look.theme;
 if(VIEW&&S.look&&!T)T=S.look.theme||null;   // an invite copy opens in its owner's colors
 function lum(h){return (0.299*parseInt(h.substr(1,2),16)+0.587*parseInt(h.substr(3,2),16)+0.114*parseInt(h.substr(5,2),16))/255}
 function applyTheme(){applyTheme0();drawGalaxy();}
@@ -647,7 +688,10 @@ function applyTheme0(){
   st.setProperty('--cardink',lum(T.card)>.55?'#241b36':'#ffffff');
   st.setProperty('color-scheme',lum(T.wall)<.5?'dark':'light');
 }
-function saveTheme(){try{if(T)localStorage.setItem(TK,JSON.stringify(T));else localStorage.removeItem(TK);}catch(e){}}
+function saveTheme(){
+  try{if(T)localStorage.setItem(TK,JSON.stringify(T));else localStorage.removeItem(TK);}catch(e){}
+  if(!VIEW){S.look=S.look||{};S.look.theme=T;save()}
+}
 function current(){
   if(T){var q=Object.assign({},T);if(!q.star||!q.sc)q.star=q.tag;return q}
   var cs=getComputedStyle(document.documentElement),o={};
@@ -678,6 +722,7 @@ $('tclose').onclick=function(){$('tdlg').close()};
 /* ---- background style ---- */
 var BK='vr-closet-bg-v1',BG='stars';
 try{var sb=localStorage.getItem(BK);if(sb==='stars'||sb==='galaxy'||sb==='paws'||sb==='none')BG=sb;else if(VIEW&&S.look&&S.look.bg)BG=S.look.bg}catch(e){if(VIEW&&S.look&&S.look.bg)BG=S.look.bg}
+if(!VIEW&&S.look&&S.look.bg)BG=S.look.bg;
 var BGS=[['stars','Twinkling stars'],['galaxy','Spinning galaxy'],['paws','Paw prints'],['none','Plain']];
 function starColor(){
   var cs=getComputedStyle(document.documentElement),v=cs.getPropertyValue('--star').trim()||cs.getPropertyValue('--tag').trim();
@@ -777,7 +822,9 @@ window.addEventListener('resize',function(){
   if(s.clientWidth+'x'+s.clientHeight!==lastPaw)drawPaws();
 });
 function setBg(m){
+  var changed=BG!==m||!S.look||S.look.bg!==m;
   BG=m;try{localStorage.setItem(BK,m)}catch(e){}
+  if(!VIEW&&changed){S.look=S.look||{};S.look.bg=m;if(!('theme' in S.look))S.look.theme=T;save()}
   $('sky').setAttribute('data-mode',m);
   [].forEach.call($('bgs').children,function(b){b.setAttribute('aria-pressed',String(b.dataset.m===m))});
   drawGalaxy();
